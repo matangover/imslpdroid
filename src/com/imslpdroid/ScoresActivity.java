@@ -114,7 +114,7 @@ public class ScoresActivity extends ListActivity {
 								"we_file_info2").get(0).text();
 						String title = weFile.getElementsByClass(
 								"we_file_dlarrwrap").parents().get(0).text();
-						if (scannedBy.contains("PDF file")) {
+						if (scannedBy.contains("PDF")) {
 							Score newScore = new Score(scoreId, author, piece,
 									publisherInfo, title, pagesandco, blocked, -1);
 							res.add(newScore);
