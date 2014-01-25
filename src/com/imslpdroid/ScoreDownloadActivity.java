@@ -11,7 +11,11 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.protocol.BasicHttpContext;
+import org.apache.http.protocol.ExecutionContext;
+import org.apache.http.protocol.HttpContext;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -96,12 +100,23 @@ public class ScoreDownloadActivity extends Activity {
 			try {
 				HttpClient httpclient = new DefaultHttpClient();
 				HttpGet httpget = new HttpGet("http://imslp.org/wiki/Special:IMSLPDisclaimerAccept/" + score.getScoreId());
-				HttpResponse response = httpclient.execute(httpget);
+				HttpContext context = new BasicHttpContext(); 
+				HttpResponse response = httpclient.execute(httpget, context);
+				// Determine whether we reached the PDF file or the EU server.
+				HttpUriRequest currentReq = (HttpUriRequest) context.getAttribute(ExecutionContext.HTTP_REQUEST);
+				String currentUrl = currentReq.getURI().toString();
+				if (currentUrl.contains("linkhandler.php"))
+				{
+					// We were redirected to the EU server. Make a new request for the actual PDF file.
+					String filePath = currentReq.getURI().getQuery().substring("path=".length());
+					httpget = new HttpGet("http://imslp.eu/download.php?file=files" + filePath);
+					response = httpclient.execute(httpget);
+				}
 				HttpEntity entity = response.getEntity();
 				Header contentType = entity.getContentType();
 				for (HeaderElement element : contentType.getElements()) {
 					String responseType = element.getName();
-					if (responseType.equals("application/pdf")) {
+					if (responseType.equals("application/pdf") || responseType.equals("application/octet-stream")) {
 						int size = -1;
 						for (Header h : response.getAllHeaders())
 							if (h.getName().equals("Content-Length"))
